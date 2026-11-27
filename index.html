@@ -407,7 +407,7 @@ function newGame(name, hat, seed) {
   return S;
 }
 function isInt(x) { return typeof x === 'number' && x === (x | 0); }
-function load(obj) { S = obj; S.mc = S.mc || {}; S.dex = S.dex || {}; S.career = S.career || {}; S.fav = S.fav || {}; S.isl = S.isl || {}; S.spets = S.spets || {}; S.shops = S.shops || {}; SHOP_ALL.forEach(function (id) { if (!S.shops[id]) S.shops[id] = { lv: 0, price: 1, staff: false, spent: 0 }; }); if (!S.quests || !S.quests.length) { S.quests = []; genQuests(); } S.own = S.own || {}; S.eq = S.eq || {}; for (var ck in COS_DEFAULT) if (!S.eq[ck] || !COS_BY[S.eq[ck]]) S.eq[ck] = COS_DEFAULT[ck]; S.dreams = S.dreams || {}; Object.keys(DREAMS).forEach(function (d) { if (S.dreams[d] == null) S.dreams[d] = false; }); S.shops = S.shops || {}; SHOP_ORDER.forEach(function (id) { if (!S.shops[id]) S.shops[id] = { lv: 0, price: 1, staff: false, spent: 0 }; }); S.toasts = []; S.log = S.log || []; S.learn = S.learn || {}; S.st = S.st || {}; S.st.studyN = S.st.studyN || 0; S.traits = S.traits || {}; S.sq = S.sq || []; S.infl = S.infl || 1; S.works = S.works || { library: 0, park: 0, clinic: 0 }; S.wdone = S.wdone || {}; S.pub = S.pub || 0; S.wo = S.wo || ['library', 'park', 'clinic']; S.chapterReports = S.chapterReports || []; S.chapBase = S.chapBase || { forced: 0 }; S.reportSeen = S.reportSeen || 0; S.bulkUntil = S.bulkUntil == null ? -1 : S.bulkUntil; S.inv = S.inv || {}; if (!S.inv.bond) S.inv.bond = { u: 0, c: 0 }; S.px = S.px || {}; if (!S.px.bond) S.px.bond = [100]; S.goal = S.goal || ''; return S; }
+function load(obj) { S = obj; S.mc = S.mc || {}; S.dex = S.dex || {}; S.career = S.career || {}; S.fav = S.fav || {}; S.isl = S.isl || {}; S.spets = S.spets || {}; S.shops = S.shops || {}; SHOP_ALL.forEach(function (id) { if (!S.shops[id]) S.shops[id] = { lv: 0, price: 1, staff: false, spent: 0 }; }); S.own = S.own || {}; S.eq = S.eq || {}; for (var ck in COS_DEFAULT) if (!S.eq[ck] || !COS_BY[S.eq[ck]]) S.eq[ck] = COS_DEFAULT[ck]; S.dreams = S.dreams || {}; Object.keys(DREAMS).forEach(function (d) { if (S.dreams[d] == null) S.dreams[d] = false; }); S.shops = S.shops || {}; SHOP_ORDER.forEach(function (id) { if (!S.shops[id]) S.shops[id] = { lv: 0, price: 1, staff: false, spent: 0 }; }); S.toasts = []; S.log = S.log || []; S.learn = S.learn || {}; S.st = S.st || {}; S.st.studyN = S.st.studyN || 0; S.traits = S.traits || {}; S.sq = S.sq || []; S.infl = S.infl || 1; S.works = S.works || { library: 0, park: 0, clinic: 0 }; S.wdone = S.wdone || {}; S.pub = S.pub || 0; S.wo = S.wo || ['library', 'park', 'clinic']; S.chapterReports = S.chapterReports || []; S.chapBase = S.chapBase || { forced: 0 }; S.reportSeen = S.reportSeen || 0; S.bulkUntil = S.bulkUntil == null ? -1 : S.bulkUntil; S.inv = S.inv || {}; if (!S.inv.bond) S.inv.bond = { u: 0, c: 0 }; S.px = S.px || {}; if (!S.px.bond) S.px.bond = [100]; S.goal = S.goal || ''; if (!S.quests || !S.quests.length) { S.quests = []; genQuests(); } return S; }
 function state() { return S; }
 
 function px(id) { var a = S.px[id]; return a[a.length - 1]; }
@@ -2157,8 +2157,11 @@ function refresh() {
   $('#h-av').style.background = hatColor(); $('#h-joy').style.width = S.joy + '%';
   var ap = ''; for (var i = 0; i < G.apMax(); i++) ap += '<i class="' + (i < S.ap ? '' : 'off') + '"></i>'; $('#h-ap').innerHTML = ap;
   $('#tip').textContent = G.advice();
-  buildDock(); pinsUpdate(); if (World.ok) World.sync(S, sceneInfo());
+  buildDock(); pinsUpdate(); if (World.ok) { try { World.sync(S, sceneInfo()); } catch (e) { fall3d(e); } }
 }
+var errShown = 0;
+function fall3d(e) { World.ok = false; World.onFrame = null; document.body.classList.add('flat'); var sc = $('#scene'); if (sc) sc.style.display = 'none'; if (errShown++ < 3) say('3D 畫面出了問題，已改用簡易畫面：' + (e && e.message || e), false); }
+window.addEventListener('error', function (ev) { if (errShown++ < 3) say('發生錯誤：' + (ev.message || '') + (ev.lineno ? '（行 ' + ev.lineno + '）' : ''), false); });
 function buildDock() {
   var S = G.state(), d = $('#dock'), ap = S.ap;
   d.innerHTML =
@@ -2200,6 +2203,9 @@ function pinsUpdate() {
   }
 }
 function pinsFrame() {
+  try { pinsFrame0(); } catch (e) { fall3d(e); }
+}
+function pinsFrame0() {
   if (!G.state() || $('#title').classList.contains('on')) return;
   for (var k in pins) { var p = World.screenPos(k); if (!p) continue; var b = pins[k]; b.style.display = p.v ? '' : 'none'; b.style.transform = 'translate(' + Math.round(p.x) + 'px,' + Math.round(p.y) + 'px) translate(-50%,-100%)'; }
 }
@@ -2392,8 +2398,8 @@ function confirmRestart() { showSheet('<h2>重新開始？</h2><p>目前的進�
 function hatsUi() { var h = $('#hats'); h.innerHTML = ''; G.HATS.forEach(function (c, i) { var b = document.createElement('button'); b.style.background = c.color; b.className = i === selHat ? 'on' : ''; b.setAttribute('aria-label', c.name); b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', i === selHat); b.onclick = function () { selHat = i; hatsUi(); }; h.appendChild(b); }); }
 function toTitle() { titleInfo(); $('#title').classList.add('on'); $('#hud').hidden = true; $('#dock').hidden = true; $('#pins').style.display = 'none'; $('#cont').hidden = !loadSave(); $('#undo').hidden = !loadBak(); $('#undo').hidden = !loadBak(); }
 function enter() {
-  Guard.start(); $('#title').classList.remove('on'); $('#hud').hidden = false; $('#dock').hidden = false; $('#pins').style.display = ''; refresh();
-  if (World.ok) World.focus('home'); save();
+  try { Guard.start(); } catch (e) {} $('#title').classList.remove('on'); $('#hud').hidden = false; $('#dock').hidden = false; $('#pins').style.display = ''; refresh();
+  if (World.ok) { try { World.focus('home'); } catch (e) { fall3d(e); } } save();
   flow();
 }
 function intro() {
